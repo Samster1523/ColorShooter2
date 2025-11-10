@@ -15,6 +15,9 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI scoreText;
     public GameObject gameOverPanel;
 
+    [Header("Start Menu")]
+    public GameObject startPanel;   // <- assign your StartPanel here
+
     [Header("Spawning (Timing & Position)")]
     [Tooltip("Starting delay between bubble spawns (seconds).")]
     public float initialSpawnInterval = 1.6f;
@@ -41,6 +44,7 @@ public class GameManager : MonoBehaviour
 
     // ---- runtime state ----
     public bool isOver { get; private set; }
+    bool _hasStarted;
 
     SimplePool<Bullet> _bulletPool;
     SimplePool<Bubble> _bubblePool;
@@ -56,6 +60,7 @@ public class GameManager : MonoBehaviour
     {
         if (I && I != this) { Destroy(gameObject); return; }
         I = this;
+
         if (gameOverPanel) gameOverPanel.SetActive(false);
     }
 
@@ -80,11 +85,17 @@ public class GameManager : MonoBehaviour
         _currentSpawnInterval = initialSpawnInterval;
         _nextStepScore = pointsPerStep;
         _spawnTimer = 0f;
+
+        // ----- START PANEL LOGIC -----
+        _hasStarted = false;                      // gate spawns
+        if (startPanel) startPanel.SetActive(true);
+        if (scoreText) scoreText.gameObject.SetActive(false);
+        if (launcher) launcher.enabled = false;
     }
 
     void Update()
     {
-        if (isOver) return;
+        if (isOver || !_hasStarted) return;  // don't run gameplay until started
 
         // ---- one-at-a-time spawn loop ----
         _spawnTimer += Time.deltaTime;
@@ -104,6 +115,50 @@ public class GameManager : MonoBehaviour
                 break;
             }
         }
+    }
+
+    // ===================== Public UI Actions =====================
+
+    // Hook this to Start Button OnClick
+    public void StartGame()
+    {
+        _hasStarted = true;
+        isOver = false;
+
+        // UI
+        if (startPanel) startPanel.SetActive(false);
+        if (scoreText) scoreText.gameObject.SetActive(true);
+
+        // gameplay
+        if (launcher) launcher.enabled = true;
+
+        // reset pacing & score
+        _currentSpawnInterval = initialSpawnInterval;
+        _nextStepScore = pointsPerStep;
+        _spawnTimer = 0f;
+        UpdateScore(0);
+    }
+
+    public void Restart()
+    {
+        // Called by the Game Over panel button
+        isOver = false;
+        _hasStarted = true; // restart straight into gameplay (no start menu)
+
+        if (gameOverPanel) gameOverPanel.SetActive(false);
+        if (scoreText) scoreText.gameObject.SetActive(true);
+        if (launcher) launcher.enabled = true;
+
+        // clear any leftovers
+        for (int i = 0; i < _activeBubbles.Count; i++)
+            if (_activeBubbles[i]) _activeBubbles[i].Despawn();
+        _activeBubbles.Clear();
+
+        // reset pacing & score
+        _currentSpawnInterval = initialSpawnInterval;
+        _nextStepScore = pointsPerStep;
+        _spawnTimer = 0f;
+        UpdateScore(0);
     }
 
     // ===================== Bullets =====================
@@ -146,7 +201,7 @@ public class GameManager : MonoBehaviour
     // Bullet ↔ Bubble collision decision (called by BulletTrigger)
     public void HandleBulletBubble(Bullet bullet, Bubble bubble)
     {
-        if (isOver || bullet == null || bubble == null) return;
+        if (isOver || !_hasStarted || bullet == null || bubble == null) return;
 
         if (bullet.colorType == bubble.colorType)
         {
@@ -180,26 +235,15 @@ public class GameManager : MonoBehaviour
     public void GameOver()
     {
         isOver = true;
+        _hasStarted = false; // block gameplay
+
         if (launcher) launcher.enabled = false;
+        if (scoreText) scoreText.gameObject.SetActive(false);
         if (gameOverPanel) gameOverPanel.SetActive(true);
 
         // stop & clear all bubbles
         for (int i = 0; i < _activeBubbles.Count; i++)
             if (_activeBubbles[i]) _activeBubbles[i].Despawn();
         _activeBubbles.Clear();
-    }
-
-    public void Restart()
-    {
-        isOver = false;
-        if (launcher) launcher.enabled = true;
-        if (gameOverPanel) gameOverPanel.SetActive(false);
-
-        UpdateScore(0);
-
-        // Reset pacing
-        _currentSpawnInterval = initialSpawnInterval;
-        _nextStepScore = pointsPerStep;
-        _spawnTimer = 0f;
     }
 }
