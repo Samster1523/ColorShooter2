@@ -1,75 +1,100 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using TMPro;
-using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager I;
 
-    [Header("Refs")]
+    [Header("References")]
     public LauncherController launcher;
     public Bullet bulletPrefab;
     public Bubble bubblePrefab;
+
+    [Header("UI")]
     public TextMeshProUGUI scoreText;
     public GameObject gameOverPanel;
 
-    [Header("Spawning")]
-    public float spawnInterval = 1.0f;
+    [Header("Spawning (Timing & Position)")]
+    [Tooltip("Starting delay between bubble spawns (seconds).")]
+    public float initialSpawnInterval = 1.6f;
+    [Tooltip("Minimum delay between spawns (seconds).")]
+    public float minSpawnInterval = 0.5f;
+    [Tooltip("How much to reduce the interval at each step.")]
+    public float spawnIntervalStep = 0.15f;
+    [Tooltip("Increase spawn speed every N points.")]
+    public int pointsPerStep = 20;
+
+    [Tooltip("X range where bubbles can spawn.")]
     public float spawnXMin = -2.5f;
     public float spawnXMax = 2.5f;
+    [Tooltip("World Y where bubbles spawn (top).")]
     public float spawnY = 9.5f;
-    public Vector2 bubbleSpeedRange = new Vector2(1.8f, 3.2f);
+
+    [Header("Bubble Falling Speed (Range)")]
+    [Tooltip("Initial bubble fall speed range (units/sec).")]
+    public Vector2 bubbleSpeedRange = new Vector2(0.9f, 1.6f);
 
     [Header("Gameplay")]
-    public float failLineY = -3.0f; // set from launcher nozzleTip during Start
-    public bool isOver;
+    [Tooltip("Fail line Y — set from launcher.nozzleTip at Start if present.")]
+    public float failLineY = -3.0f;
 
-    SimplePool<Bullet> bulletPool;
-    SimplePool<Bubble> bubblePool;
+    // ---- runtime state ----
+    public bool isOver { get; private set; }
+
+    SimplePool<Bullet> _bulletPool;
+    SimplePool<Bubble> _bubblePool;
 
     int _score;
-    float _timer;
+    float _spawnTimer;
+    float _currentSpawnInterval;
+    int _nextStepScore;
 
     readonly List<Bubble> _activeBubbles = new List<Bubble>();
 
     void Awake()
     {
-        if (I && I != this) Destroy(gameObject);
+        if (I && I != this) { Destroy(gameObject); return; }
         I = this;
         if (gameOverPanel) gameOverPanel.SetActive(false);
     }
 
     void Start()
     {
-        // pools
-        bulletPool = new SimplePool<Bullet>(bulletPrefab, 8, transform);
-        bubblePool = new SimplePool<Bubble>(bubblePrefab, 16, transform);
+        // Pools
+        _bulletPool = new SimplePool<Bullet>(bulletPrefab, 8, transform);
+        _bubblePool = new SimplePool<Bubble>(bubblePrefab, 16, transform);
 
-        // hook launcher fire
-        if (launcher != null)
+        // Hook launcher
+        if (launcher)
         {
             launcher.OnShoot.AddListener(FireBullet);
-            if (launcher.nozzleTip != null)
-                failLineY = launcher.nozzleTip.position.y;
+            if (launcher.nozzleTip) failLineY = launcher.nozzleTip.position.y;
         }
 
+        // UI/state
         UpdateScore(0);
         isOver = false;
+
+        // Spawn pacing
+        _currentSpawnInterval = initialSpawnInterval;
+        _nextStepScore = pointsPerStep;
+        _spawnTimer = 0f;
     }
 
     void Update()
     {
         if (isOver) return;
 
-        // spawn cadence
-        _timer += Time.deltaTime;
-        if (_timer >= spawnInterval)
+        // ---- one-at-a-time spawn loop ----
+        _spawnTimer += Time.deltaTime;
+        if (_spawnTimer >= _currentSpawnInterval)
         {
-            _timer = 0f;
-            SpawnBubble();
+            _spawnTimer = 0f;       // reset to prevent burst spawns
+            SpawnBubble();          // spawn exactly one bubble
         }
 
-        // fail condition: any bubble crosses fail line
+        // ---- fail condition: any bubble reaches fail line ----
         for (int i = 0; i < _activeBubbles.Count; i++)
         {
             var b = _activeBubbles[i];
@@ -81,29 +106,32 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ---- bullets
+    // ===================== Bullets =====================
+
     void FireBullet(ColorType cType, Vector3 spawn)
     {
-        var b = bulletPool.Get();
+        var b = _bulletPool.Get();
         b.Fire(cType, GameColors.ToColor(cType), spawn);
     }
 
     public void ReturnBullet(Bullet b)
     {
         if (!b) return;
-        bulletPool.Return(b);
+        _bulletPool.Return(b);
     }
 
-    // ---- bubbles
+    // ===================== Bubbles =====================
+
     void SpawnBubble()
     {
-        var bubble = bubblePool.Get();
-        var x = Random.Range(spawnXMin, spawnXMax);
-        var cType = (ColorType)Random.Range(0, GameColors.Count); // 0..3
-        var color = GameColors.ToColor(cType);
-        var speed = Random.Range(bubbleSpeedRange.x, bubbleSpeedRange.y);
+        var bubble = _bubblePool.Get();
 
-        bubble.Init(cType, color, new Vector3(x, spawnY, 0), speed);
+        float x = Random.Range(spawnXMin, spawnXMax);
+        var cType = (ColorType)Random.Range(0, GameColors.Count); // 4 colors: 0..3
+        Color c = GameColors.ToColor(cType);
+        float speed = Random.Range(bubbleSpeedRange.x, bubbleSpeedRange.y);
+
+        bubble.Init(cType, c, new Vector3(x, spawnY, 0f), speed);
         _activeBubbles.Add(bubble);
     }
 
@@ -112,50 +140,66 @@ public class GameManager : MonoBehaviour
         if (!b) return;
         b.Despawn();
         _activeBubbles.Remove(b);
-        bubblePool.Return(b);
+        _bubblePool.Return(b);
     }
 
-    // ---- collision decision
+    // Bullet ↔ Bubble collision decision (called by BulletTrigger)
     public void HandleBulletBubble(Bullet bullet, Bubble bubble)
     {
         if (isOver || bullet == null || bubble == null) return;
 
         if (bullet.colorType == bubble.colorType)
         {
-            // match → destroy both + score +1
-            bullet.gameObject.SetActive(false);
+            bullet.gameObject.SetActive(false); // bullet returns to pool via deactivation path
             DespawnBubble(bubble);
             UpdateScore(_score + 1);
         }
-        else
-        {
-            // mismatch → pass-through (do nothing)
-        }
+        // else mismatch → pass-through (do nothing)
     }
 
-    // ---- UI & state
-    void UpdateScore(int s)
+    // ===================== UI & State =====================
+
+    void UpdateScore(int newScore)
     {
-        _score = s;
+        _score = newScore;
         if (scoreText) scoreText.text = $"Score: {_score}";
+
+        // Every N points, tighten the spawn interval and gently raise fall speed
+        if (_score >= _nextStepScore)
+        {
+            _currentSpawnInterval = Mathf.Max(minSpawnInterval, _currentSpawnInterval - spawnIntervalStep);
+
+            // Optional: nudge fall speeds so difficulty ramps smoothly
+            bubbleSpeedRange.x += 0.05f;
+            bubbleSpeedRange.y += 0.06f;
+
+            _nextStepScore += pointsPerStep;
+        }
     }
 
     public void GameOver()
     {
         isOver = true;
-        if (gameOverPanel) gameOverPanel.SetActive(true);
         if (launcher) launcher.enabled = false;
+        if (gameOverPanel) gameOverPanel.SetActive(true);
 
-        // stop all bubbles
-        foreach (var b in _activeBubbles) if (b) b.Despawn();
+        // stop & clear all bubbles
+        for (int i = 0; i < _activeBubbles.Count; i++)
+            if (_activeBubbles[i]) _activeBubbles[i].Despawn();
         _activeBubbles.Clear();
     }
 
     public void Restart()
     {
         isOver = false;
-        UpdateScore(0);
-        if (gameOverPanel) gameOverPanel.SetActive(false);
         if (launcher) launcher.enabled = true;
+        if (gameOverPanel) gameOverPanel.SetActive(false);
+
+        UpdateScore(0);
+
+        // Reset pacing
+        _currentSpawnInterval = initialSpawnInterval;
+        _nextStepScore = pointsPerStep;
+        _spawnTimer = 0f;
     }
 }
