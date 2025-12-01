@@ -397,88 +397,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 163263104}
   m_CullTransparentMesh: 1
---- !u!1 &487311185
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 487311187}
-  - component: {fileID: 487311186}
-  m_Layer: 0
-  m_Name: NozzlePreview
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!212 &487311186
-SpriteRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 487311185}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 0
-  m_RayTraceProcedural: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 0
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: -1454377143
-  m_SortingLayer: 3
-  m_SortingOrder: 1
-  m_Sprite: {fileID: -2413806693520163455, guid: 5f075fa9f75032145b3fbf7535a2fe11, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_FlipX: 0
-  m_FlipY: 0
-  m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
-  m_AdaptiveModeThreshold: 0.5
-  m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
-  m_SpriteSortPoint: 0
---- !u!4 &487311187
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 487311185}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.35, y: 0, z: 0}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
-  m_Children: []
-  m_Father: {fileID: 730598443}
-  m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -670,19 +588,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   launcher: {fileID: 730598441}
   bulletPrefab: {fileID: 4693619026623411525, guid: 8e408ddfc5f32ac43a77ed526d09a2a5, type: 3}
-  bubblePrefab: {fileID: -5976817050237835630, guid: bc5da58d51b23f245a0ae5551f1d6a46, type: 3}
+  bubblePrefab: {fileID: 2407057592326849706, guid: bc5da58d51b23f245a0ae5551f1d6a46, type: 3}
   scoreText: {fileID: 903130209}
   gameOverPanel: {fileID: 580863368}
   startPanel: {fileID: 1023487946}
+  spawnXMin: -2.5
+  spawnXMax: 2.5
+  spawnYMin: -0.5
+  spawnYMax: 3.5
+  minHits: 1
+  maxHits: 5
   initialSpawnInterval: 1.6
   minSpawnInterval: 0.8
   spawnIntervalStep: 0.15
   pointsPerStep: 20
-  spawnXMin: -2.5
-  spawnXMax: 2.5
-  spawnY: 9.5
-  bubbleSpeedRange: {x: 1.8, y: 3.2}
-  failLineY: -3
+  maxBubblesOnScreen: 18
 --- !u!4 &665075222
 Transform:
   m_ObjectHideFlags: 0
@@ -812,7 +732,7 @@ MonoBehaviour:
   moveSpeed: 8
   clampX: 2.8
   nozzleTip: {fileID: 781552456}
-  nozzlePreview: {fileID: 487311186}
+  nozzlePreview: {fileID: 0}
   currentColor: 0
   OnShoot:
     m_PersistentCalls:
@@ -880,7 +800,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 781552456}
-  - {fileID: 487311187}
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}

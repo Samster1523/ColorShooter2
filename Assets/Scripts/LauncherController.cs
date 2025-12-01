@@ -4,68 +4,38 @@ using UnityEngine.Events;
 public class LauncherController : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed = 8f;
-    public float clampX = 2.8f;
+    public float moveSpeed = 6f;
+    public float xMin = -3.5f;
+    public float xMax = 3.5f;
 
-    [Header("Nozzle & Preview")]
+    [Header("Shooting")]
     public Transform nozzleTip;
-    public SpriteRenderer nozzlePreview;
-    public ColorType currentColor = ColorType.Red;
+    public KeyCode shootKey = KeyCode.Space;
 
-    [System.Serializable] public class ShootEvent : UnityEvent<ColorType, Vector3> { }
-    public ShootEvent OnShoot; // GameManager will listen later
-
-    void Start() { UpdateNozzleColor(); }
+    [System.Serializable]
+    public class ShootEvent : UnityEvent<Vector3> { }
+    public ShootEvent OnShoot;
 
     void Update()
     {
-        HandleMove();
-        HandleInput();
+        HandleMovement();
+        HandleShooting();
     }
 
-    void HandleMove()
+    void HandleMovement()
     {
-        float h = Input.GetAxisRaw("Horizontal");
-        transform.position += Vector3.right * h * moveSpeed * Time.deltaTime;
+        float h = Input.GetAxisRaw("Horizontal");   // A/D or Arrow keys
+        Vector3 pos = transform.position;
+        pos.x += h * moveSpeed * Time.deltaTime;
+        pos.x = Mathf.Clamp(pos.x, xMin, xMax);
+        transform.position = pos;
+    }
 
-        // simple drag (mouse/touch)
-        if (Input.GetMouseButton(0))
+    void HandleShooting()
+    {
+        if (Input.GetKeyDown(shootKey) && nozzleTip != null)
         {
-            var world = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            transform.position = new Vector3(
-                Mathf.Lerp(transform.position.x, world.x, 0.25f),
-                transform.position.y, 0f);
+            OnShoot?.Invoke(nozzleTip.position);
         }
-
-        transform.position = new Vector3(
-            Mathf.Clamp(transform.position.x, -clampX, clampX),
-            transform.position.y, 0f);
-    }
-
-    void HandleInput()
-    {
-        if (Input.GetKeyDown(KeyCode.C)) NextColor();
-
-        if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0))
-            Shoot();
-    }
-
-    void NextColor()
-    {
-        currentColor = (ColorType)(((int)currentColor + 1) % GameColors.Count);
-        UpdateNozzleColor();
-    }
-
-    void UpdateNozzleColor()
-    {
-        if (nozzlePreview) nozzlePreview.color = GameColors.ToColor(currentColor);
-    }
-
-    void Shoot()
-    {
-        var spawn = nozzleTip ? nozzleTip.position : transform.position;
-        OnShoot?.Invoke(currentColor, spawn);
-        Debug.Log($"Shoot pressed — {currentColor} at {spawn}");
     }
 }
-

@@ -3,31 +3,39 @@ using UnityEngine;
 
 public class SimplePool<T> where T : Component
 {
-    readonly Queue<T> q = new Queue<T>();
-    readonly T prefab;
-    readonly Transform parent;
+    readonly T _prefab;
+    readonly Transform _parent;
+    readonly Queue<T> _pool = new Queue<T>();
 
-    public SimplePool(T prefab, int initial, Transform parent)
+    public SimplePool(T prefab, int initialSize, Transform parent = null)
     {
-        this.prefab = prefab; this.parent = parent;
-        for (int i = 0; i < initial; i++)
+        _prefab = prefab;
+        _parent = parent;
+
+        for (int i = 0; i < initialSize; i++)
         {
-            var obj = GameObject.Instantiate(prefab, parent);
+            var obj = Object.Instantiate(_prefab, _parent);
             obj.gameObject.SetActive(false);
-            q.Enqueue(obj);
+            _pool.Enqueue(obj);
         }
     }
 
     public T Get()
     {
-        var obj = q.Count > 0 ? q.Dequeue() : GameObject.Instantiate(prefab, parent);
-        obj.gameObject.SetActive(true);
-        return obj;
+        if (_pool.Count > 0)
+        {
+            var obj = _pool.Dequeue();
+            obj.gameObject.SetActive(true);
+            return obj;
+        }
+
+        return Object.Instantiate(_prefab, _parent);
     }
 
     public void Return(T obj)
     {
+        if (obj == null) return;
         obj.gameObject.SetActive(false);
-        q.Enqueue(obj);
+        _pool.Enqueue(obj);
     }
 }

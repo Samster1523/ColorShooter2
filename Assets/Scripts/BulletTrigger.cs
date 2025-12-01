@@ -3,16 +3,18 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class BulletTrigger : MonoBehaviour
 {
-    Bullet b;
+    Bullet _bullet;
 
-    void Awake() { b = GetComponent<Bullet>(); }
+    void Awake()
+    {
+        _bullet = GetComponent<Bullet>();
+    }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        var bubble = other.GetComponent<Bubble>();
-        if (bubble == null) return;
+        var bubble = other.GetComponent<NumberBubble>();
+        if (bubble == null || GameManager.I == null) return;
 
-        // Delegate decision to GameManager
-        GameManager.I.HandleBulletBubble(b, bubble);
+        GameManager.I.HandleBulletHit(bubble, _bullet);
     }
 }
