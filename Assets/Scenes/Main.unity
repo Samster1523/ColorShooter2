@@ -135,7 +135,7 @@ GameObject:
   - component: {fileID: 48497585}
   - component: {fileID: 48497584}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: Controls
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -183,8 +183,6 @@ MonoBehaviour:
   m_text: 'Controls:
 
     A/D - Movement
-
-    C - Color Change
 
     SpaceBar - Shoot'
   m_isRightToLeft: 0
@@ -320,7 +318,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: COLOR SHOOTER
+  m_text: Number Pop
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -590,8 +588,8 @@ MonoBehaviour:
   bulletPrefab: {fileID: 4693619026623411525, guid: 8e408ddfc5f32ac43a77ed526d09a2a5, type: 3}
   bubblePrefab: {fileID: 2407057592326849706, guid: bc5da58d51b23f245a0ae5551f1d6a46, type: 3}
   scoreText: {fileID: 903130209}
-  gameOverPanel: {fileID: 580863368}
   startPanel: {fileID: 1023487946}
+  gameOverPanel: {fileID: 580863368}
   spawnXMin: -2.5
   spawnXMax: 2.5
   spawnYMin: -0.5
@@ -602,7 +600,8 @@ MonoBehaviour:
   minSpawnInterval: 0.8
   spawnIntervalStep: 0.15
   pointsPerStep: 20
-  maxBubblesOnScreen: 18
+  maxBubblesOnScreen: 15
+  baseBubbleColor: {r: 0.4, g: 0.7, b: 1, a: 0.45}
 --- !u!4 &665075222
 Transform:
   m_ObjectHideFlags: 0
@@ -730,10 +729,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 8
-  clampX: 2.8
+  xMin: -3.5
+  xMax: 3.5
   nozzleTip: {fileID: 781552456}
-  nozzlePreview: {fileID: 0}
-  currentColor: 0
+  shootKey: 32
   OnShoot:
     m_PersistentCalls:
       m_Calls: []
